@@ -3,6 +3,7 @@ package kn.valida.discourseModel;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DiscourseProposition {
@@ -16,8 +17,8 @@ public class DiscourseProposition {
     again
     */
     private String text;
-    private LinkedHashMap<String,List<Speaker>> beliefHolder = new LinkedHashMap<>();
-    private LinkedHashMap<String,List<Speaker>> deniesBelief = new LinkedHashMap<>();
+    private LinkedHashMap<String,Set<Speaker>> beliefHolder = new LinkedHashMap<>();
+    private LinkedHashMap<String,Set<Speaker>> deniesBelief = new LinkedHashMap<>();
     private List<DiscourseProposition> expressiveContent = new ArrayList<>();
 
 
@@ -80,8 +81,8 @@ public class DiscourseProposition {
      */
 
     public DiscourseProposition(String pid, Integer anchor, String text, Speaker originalSpeaker,
-                                LinkedHashMap<String,List<Speaker>> beliefHolder,
-                                LinkedHashMap<String,List<Speaker>> deniesBelief,
+                                LinkedHashMap<String,Set<Speaker>> beliefHolder,
+                                LinkedHashMap<String,Set<Speaker>> deniesBelief,
                                 List<DiscourseProposition> expressiveContent)
 
     {
@@ -119,11 +120,11 @@ public class DiscourseProposition {
         this.anchor = anchor;
     }
 
-    public LinkedHashMap<String,List<Speaker>> getBeliefHolder() {
+    public LinkedHashMap<String,Set<Speaker>> getBeliefHolder() {
         return beliefHolder;
     }
 
-    public void setBeliefHolder(LinkedHashMap<String,List<Speaker>> beliefHolder) {
+    public void setBeliefHolder(LinkedHashMap<String,Set<Speaker>> beliefHolder) {
         this.beliefHolder = beliefHolder;
     }
 
@@ -143,11 +144,11 @@ public class DiscourseProposition {
         this.originalSpeaker = originalSpeaker;
     }
 
-    public LinkedHashMap<String, List<Speaker>> getDeniesBelief() {
+    public LinkedHashMap<String, Set<Speaker>> getDeniesBelief() {
         return deniesBelief;
     }
 
-    public void setDeniesBelief(LinkedHashMap<String, List<Speaker>> deniesBelief) {
+    public void setDeniesBelief(LinkedHashMap<String, Set<Speaker>> deniesBelief) {
         this.deniesBelief = deniesBelief;
     }
 

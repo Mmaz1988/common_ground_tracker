@@ -16,7 +16,8 @@ public class PropositionRenderer extends DefaultListCellRenderer {
     //All sets of Strings are sets of pids
     private Border padBorder = new EmptyBorder(3,3,3,3);
     private Set<String> highlightCommitments = new HashSet<>();
-    private Set<String> highlightJointCommitments = new HashSet<>();
+    private Set<String> highlightPositiveJointCommitments = new HashSet<>();
+    private Set<String> highlightNegativeJointCommitments = new HashSet<>();
     private Set<String> highlightUnresolved = new HashSet<>();
     private Set<String> highlightControversial = new HashSet<>();
     private String currentPid;
@@ -101,9 +102,14 @@ public class PropositionRenderer extends DefaultListCellRenderer {
             Boolean highlight = false;
             for (DiscourseProposition p : ((DiscourseProposition) value).getExpressiveContent())
             {
-                if (highlightJointCommitments.contains(p.getPid()))
+                if (highlightPositiveJointCommitments.contains(p.getPid()))
                 {
                     m.setBackground(new Color(0,255,0,20));
+                }
+
+                if (highlightNegativeJointCommitments.contains(p.getPid()))
+                {
+                    m.setBackground(new Color(255,0,0,20));
                 }
 
                 if (highlightControversial.contains(p.getPid()))
@@ -147,9 +153,14 @@ public class PropositionRenderer extends DefaultListCellRenderer {
             l.setBackground(new Color(0,0,255,20));
         }
 
-        if (highlightJointCommitments.contains(((DiscourseProposition) value).getPid()))
+        if (highlightPositiveJointCommitments.contains(((DiscourseProposition) value).getPid()))
         {
             l.setBackground(new Color(0,255,0,20));
+        }
+
+        if (highlightNegativeJointCommitments.contains(((DiscourseProposition) value).getPid()))
+        {
+            l.setBackground(new Color(255,0,0,20));
         }
 
         if (highlightUnresolved.contains(((DiscourseProposition) value).getPid()))
@@ -246,7 +257,8 @@ public class PropositionRenderer extends DefaultListCellRenderer {
 
 
     public void resetLists(){
-        highlightJointCommitments = new HashSet<>();
+        highlightPositiveJointCommitments = new HashSet<>();
+        highlightNegativeJointCommitments = new HashSet<>();
         highlightCommitments = new HashSet<>();
         highlightUnresolved = new HashSet<>();
         highlightControversial = new HashSet<>();
@@ -274,12 +286,12 @@ public class PropositionRenderer extends DefaultListCellRenderer {
         this.highlightCommitments = highlightCommitments;
     }
 
-    public Set<String> getHighlightJointCommitments() {
-        return highlightJointCommitments;
+    public Set<String> getHighlightPositiveJointCommitments() {
+        return highlightPositiveJointCommitments;
     }
 
-    public void setHighlightJointCommitments(Set<String> highlightJointCommitments) {
-        this.highlightJointCommitments = highlightJointCommitments;
+    public void setHighlightPositiveJointCommitments(Set<String> highlightPositiveJointCommitments) {
+        this.highlightPositiveJointCommitments = highlightPositiveJointCommitments;
     }
 
     public Set<String> getHighlightUnresolved() {
@@ -382,6 +394,15 @@ public class PropositionRenderer extends DefaultListCellRenderer {
     public void setContradictoryProposition(Set<String> contradictoryProposition) {
         this.contradictoryProposition = contradictoryProposition;
     }
+
+    public Set<String> getHighlightNegativeJointCommitments() {
+        return highlightNegativeJointCommitments;
+    }
+
+    public void setHighlightNegativeJointCommitments(Set<String> highlightNegativeJointCommitments) {
+        this.highlightNegativeJointCommitments = highlightNegativeJointCommitments;
+    }
+
 
 }
 

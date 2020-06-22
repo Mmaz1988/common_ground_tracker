@@ -47,6 +47,40 @@ public class DiscourseOperator {
         this.dm = dm;
     }
 
+
+    public Set<String> calculatePositiveJointCommitments(Integer index)
+    {
+        Set<String> out = new HashSet<>();
+
+        DiscourseProposition current = dm.getDiscoursePropositions().get(index);
+
+        for (String key : current.getBeliefHolder().keySet())
+        {
+            if (current.getBeliefHolder().get(key).size() > 1)
+            {
+                out.add(key);
+            }
+        }
+
+        return out;
+    }
+
+    public Set<String> calculateNegativeJointCommitments(Integer index)
+    {
+        Set<String> out = new HashSet<>();
+
+        DiscourseProposition current = dm.getDiscoursePropositions().get(index);
+
+        for (String key : current.getDeniesBelief().keySet())
+        {
+            if (current.getDeniesBelief().get(key).size() > 1)
+            {
+                out.add(key);
+            }
+        }
+        return out;
+    }
+
     /**
      * Calculates commitments and joint commitments for a given speaker at a given state of the discourse.
      * Commitments are those propositions that are contained in some Speaker's beliefs.
@@ -98,14 +132,14 @@ public class DiscourseOperator {
      *                                 ...}
      */
 
-    public HashMap<Set<Speaker>,HashMap<String,Set>> calculateAllCommitments(Integer index)
+    public HashMap<Set<Speaker>,HashMap<String,Set>> calculateAllCommitments(Integer index, List<Speaker> speakers)
     {
 
         HashMap<Set<Speaker>,HashMap<String,Set>> out = new HashMap<>();
 
         Set<Speaker> speakerSet = new HashSet<>();
 
-         for (Speaker s : dm.getDiscourseParticipants())
+         for (Speaker s : speakers)
          {
              speakerSet.add(s);
          }
@@ -315,8 +349,8 @@ public class DiscourseOperator {
 
         for (DiscourseProposition p : dps)
         {
-            LinkedHashMap<String,List<Speaker>> newBeliefs = new LinkedHashMap<>();
-            LinkedHashMap<String,List<Speaker>> newDenials = new LinkedHashMap<>();
+            LinkedHashMap<String, Set<Speaker>> newBeliefs = new LinkedHashMap<>();
+            LinkedHashMap<String,Set<Speaker>> newDenials = new LinkedHashMap<>();
 
 
             for (String pid : p.getBeliefHolder().keySet())
@@ -326,7 +360,7 @@ public class DiscourseOperator {
                 if (p.getBeliefHolder().get(pid).contains(a) || p.getBeliefHolder().get(pid).contains(b)) {
 
                     if (!newBeliefs.keySet().contains(pid)) {
-                        newBeliefs.put(pid, new ArrayList<>());
+                        newBeliefs.put(pid, new HashSet<>());
                     }
                     newBeliefs.get(pid).add(combined);
 
@@ -334,9 +368,9 @@ public class DiscourseOperator {
                 }
 
                 for (Speaker s : p.getBeliefHolder().get(pid)) {
-                    if (!(s == a && s == b) && p.getBeliefHolder().get(pid).contains(s)) {
+                    if (!(s == a || s == b) && p.getBeliefHolder().get(pid).contains(s)) {
                         if (!newBeliefs.keySet().contains(pid)) {
-                            newBeliefs.put(pid, new ArrayList<>());
+                            newBeliefs.put(pid, new HashSet<>());
                         }
                         newBeliefs.get(pid).add(s);
                     }
@@ -345,7 +379,7 @@ public class DiscourseOperator {
 
                 if (!newDenials.keySet().contains(pid))
                 {
-                    newDenials.put(pid,new ArrayList<>());
+                    newDenials.put(pid,new HashSet<>());
                 }
             }
 
@@ -355,7 +389,7 @@ public class DiscourseOperator {
                 {
 
                     if(!newDenials.keySet().contains(pid)) {
-                        newDenials.put(pid, new ArrayList<>());
+                        newDenials.put(pid, new HashSet<>());
                     }
                     newDenials.get(pid).add(combined);
 
@@ -364,10 +398,10 @@ public class DiscourseOperator {
 
                 for (Speaker s : p.getDeniesBelief().get(pid))
                 {
-                    if (!(s == a && s == b) && p.getDeniesBelief().get(pid).contains(s))
+                    if (!(s == a || s == b) && p.getDeniesBelief().get(pid).contains(s))
                     {
                         if(!newDenials.keySet().contains(pid)) {
-                            newDenials.put(pid, new ArrayList<>());
+                            newDenials.put(pid, new HashSet<>());
                         }
                         newDenials.get(pid).add(s);
                     }
@@ -375,7 +409,7 @@ public class DiscourseOperator {
 
                 if (!newBeliefs.keySet().contains(pid))
                 {
-                    newBeliefs.put(pid,new ArrayList<>());
+                    newBeliefs.put(pid,new HashSet<>());
                 }
             }
 

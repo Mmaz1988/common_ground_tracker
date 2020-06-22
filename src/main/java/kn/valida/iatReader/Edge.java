@@ -74,6 +74,42 @@ public class Edge {
     }
 
     /**
+     * Finds all related content nodes that are not Default transitions
+     * @param a
+     * @param b
+     * @param edges
+     * @return
+     */
+
+    public static List<Node> findDaugtherContentNodes(Node a, List<Node> b, List<Edge> edges)
+    {
+        List<Node> intermediateNodes = new ArrayList<>();
+        List<Node> daugtherContentNode = new ArrayList<>();
+
+        for (Edge e : edges) {
+            if (e.getDaugther() instanceof Node && !(e.getDaugther().getText().equals("Default Transition"))) {
+                if (a.getJsonID().equals(e.getMother().getJsonID()) && !intermediateNodes.contains(e.getDaugther())) {
+                    intermediateNodes.add(e.getDaugther());
+                }
+            }
+        }
+
+        for (Node n : intermediateNodes)
+        {
+            for (Edge e : edges){
+                if (n.getJsonID().equals(e.getMother().getJsonID()) && !daugtherContentNode.contains(e.getDaugther())&&
+                 !(e.getDaugther().getType().equals("TA")))
+                {
+                    daugtherContentNode.add(e.getDaugther());
+                }
+            }
+        }
+
+        return daugtherContentNode;
+    }
+
+
+    /**
      * Find daugther node with specific text (For finding functional nodes such as default transition)
      * @param a
      * @param edges

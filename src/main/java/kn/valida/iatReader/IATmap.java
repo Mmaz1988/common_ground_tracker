@@ -19,7 +19,7 @@ public class IATmap {
     private List<Edge> edges;
     private List<String> speakers;
     public String fileName;
-
+    public IATanalysis analysis;
 
     public IATmap(String fileName, List<Node> nodes, List<Locution> locutions, List<Proposition> propositions, List<Edge> edges,
     List<String> speakers)
@@ -32,6 +32,19 @@ public class IATmap {
         this.speakers = speakers;
     }
 
+    public IATmap(String fileName, List<Node> nodes, List<Locution> locutions, List<Proposition> propositions, List<Edge> edges,
+                  List<String> speakers, IATanalysis analysis)
+    {
+        this.fileName = fileName;
+        this.nodes = nodes;
+        this.locutions = locutions;
+        this.propositions = propositions;
+        this.edges = edges;
+        this.speakers = speakers;
+        this.analysis = analysis;
+    }
+
+
     /**
      Translate JSON input step by step into JAVA native objects.
      @param file This is a json file containing an IAT annotation
@@ -41,6 +54,7 @@ public class IATmap {
         //Collect all nodes and edges into Java-native lists
         List<JSONObject> nodes = new ArrayList<>();
         List<JSONObject> edges = new ArrayList<>();
+        IATanalysis analysis = new IATanalysis();
 
         String content =  Utilities.readFile(file.toString(), Charset.defaultCharset());
         //sb.append(content);
@@ -108,7 +122,9 @@ public class IATmap {
                             speakers.add(l.getSpeaker());
 
                             nodesInMap.add(l);
+
                         }
+                        analysis.locutionNodes++;
                     }
                     break;
                 //Type I for propositions (?)
@@ -117,6 +133,10 @@ public class IATmap {
                     Proposition p = new Proposition(text, Integer.parseInt(j.get("nodeID").toString()));
                     propositionsInMap.add(p);
                     nodesInMap.add(p);
+
+                    //Debug info;
+                    analysis.propositionNodes++;
+
                     break;
 
                 default:
@@ -125,6 +145,50 @@ public class IATmap {
                     Integer id = Integer.parseInt(j.get("nodeID").toString());
                     Node n = new Node(type, text1, id);
                     nodesInMap.add(n);
+
+                    //Debug information
+
+                    if (text1.equals("Asserting") || text1.equals("Strong Asserting") || text1.equals("Weak Asserting") ||
+                    text1.equals("Assertive Questioning") ||text1.equals("Rhetorical Questioning"))
+                    {
+                     analysis.assertingNodes++;
+                    }
+                    else if (text1.equals("Default Illocuting")) {
+                        analysis.defaultIllocutionNodes++;
+                }
+
+                    else if (text1.equals("Default Inference"))
+                    {
+                        analysis.inferenceNodes++;
+                    } else if (text1.equals("Default Conflict"))
+                        {
+                            analysis.conflictNodes++;
+                        }
+                    else if (text1.equals("Default Rephrase"))
+                    {
+                        analysis.rephraseNodes++;
+                    }
+
+                        else if (text1.equals("Agreeing"))
+                        {
+                            analysis.agreeNodes++;
+                        }
+                        else if (text1.equals("Disagreeing"))
+                        {
+                            analysis.disagreeNodes++;
+                        }
+                        else if (text1.equals("Pure Challenging") ||text1.equals("Assertive Challenging") ||
+                                text1.equals("Rhetorical Challenging"))
+                    {
+                        analysis.challengeNodes++;
+                    }
+                        else if (text1.equals("Restating"))
+                    {
+                        analysis.restateNodes++;
+                    }
+
+
+
                     break;
             }
 
@@ -198,7 +262,7 @@ public class IATmap {
         });
         */
 
-        IATmap map = new IATmap(file.toString(),nodesInMap,locutionsInMap,propositionsInMap,edgesInMap,speakers);
+        IATmap map = new IATmap(file.toString(),nodesInMap,locutionsInMap,propositionsInMap,edgesInMap,speakers,analysis);
 
 
 

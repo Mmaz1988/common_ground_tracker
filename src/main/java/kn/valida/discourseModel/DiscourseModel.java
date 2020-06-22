@@ -17,6 +17,10 @@ public class DiscourseModel {
 
     private LinkedHashMap<String, DiscourseProposition> dpReference = new LinkedHashMap<>();
 
+    public boolean debug;
+    public DebugLog debugLog;
+    public IATanalysis analysis;
+
   //  private Bert bert = Bert.load("com/robrua/nlp/easy-bert/bert-multi-cased-L-12-H-768-A-12");
 
     public DiscourseModel() {
@@ -27,6 +31,9 @@ public class DiscourseModel {
         this.discourseParticipants = discourseParticipants;
         this.iatToDiscourse = iatToDiscourse;
     }
+
+
+
 
     public DiscourseModel(List<IATmap> annotatedDebate) {
         this.annotatedDebate = annotatedDebate;
@@ -42,6 +49,35 @@ public class DiscourseModel {
 
         this.discoursePropositions = returnDiscoursePropostions();
         System.out.println("Collected discourse propositions and speakers.");
+
+
+    }
+
+    //For debugging:
+
+    public DiscourseModel(List<IATmap> annotatedDebate, Boolean debug) {
+        this.debug = true;
+        this.debugLog = new DebugLog();
+        this.analysis = new IATanalysis(annotatedDebate);
+        this.annotatedDebate = annotatedDebate;
+        for (IATmap map : annotatedDebate) {
+            for (String s : map.getSpeakers()) {
+                if (isParticipant(s, discourseParticipants) == null) {
+                    discourseParticipants.add(new Speaker(s,
+                            (String) VariableHandler.returnNewVar(VariableHandler.variableType.SPEAKER)));
+                }
+
+            }
+        }
+
+        this.discoursePropositions = returnDiscoursePropostions();
+        System.out.println("Collected discourse propositions and speakers.");
+
+        if (debug)
+        {
+            System.out.print(analysis.toString());
+            System.out.print(debugLog.toString());
+        }
 
 
     }
@@ -65,20 +101,69 @@ public class DiscourseModel {
 
             for (Locution l : map.getLocutions()) {
 
+
+
                 System.out.println("Current locution(id): " + l.getJsonID());
 
                 dp = null;
 
                 locutions.add(l);
+                //All the
+                List<Node> assertingDaugtherNodes = new ArrayList<>();
+
+                List<Node> assertingNodes = Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Asserting");
+                assertingDaugtherNodes.addAll(assertingNodes);
+
+                List<Node> weakAssertingNodes = Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Weak Asserting");
+                assertingDaugtherNodes.addAll(weakAssertingNodes);
+
+                List<Node> strongAssertingNodes = Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Strong Asserting");
+                assertingDaugtherNodes.addAll(strongAssertingNodes);
+
+                List<Node> assertiveQuestioningNodes = Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Assertive Questioning");
+                assertingDaugtherNodes.addAll(assertiveQuestioningNodes);
+
+                List<Node> rhetoricalQuestioningNode = Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Rhetorical Questioning");
+                assertingDaugtherNodes.addAll(rhetoricalQuestioningNode);
+
+
+                List<Node> challengingDaughterNodes = new ArrayList<>();
+
+                List<Node> assertiveChallengingNodes = Edge.findRelatedDaugtherContentNode(l,map.getNodes(),map.getEdges(),"Assertive Challenging");
+                challengingDaughterNodes.addAll(assertiveChallengingNodes);
+
+                List<Node> rhetoricalChallengingNodes = Edge.findRelatedDaugtherContentNode(l,map.getNodes(),map.getEdges(),"Rhetorical Challenging");
+                challengingDaughterNodes.addAll(rhetoricalChallengingNodes);
+
+
+
+                /*Without debug; Probably needs less memory?
                 List<Node> daugtherNodes = Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Asserting");
                 daugtherNodes.addAll(Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Weak Asserting"));
                 daugtherNodes.addAll(Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Strong Asserting"));
+                daugtherNodes.addAll(Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Assertive Questioning"));
+                daugtherNodes.addAll(Edge.findRelatedDaugtherContentNode(l, map.getNodes(), map.getEdges(), "Rhetorical Questioning"));
+                */
+
+
+                if (debug)
+                {
+                    debugLog.asserting = debugLog.asserting + assertingNodes.size();
+                    debugLog.weakAsserting = debugLog.weakAsserting + weakAssertingNodes.size();
+                    debugLog.strongAsserting = debugLog.strongAsserting + strongAssertingNodes.size();
+                    debugLog.assertiveQuestioning = debugLog.assertiveQuestioning + assertiveQuestioningNodes.size();
+                    debugLog.rhetoricalQuestioning = debugLog.rhetoricalQuestioning + rhetoricalQuestioningNode.size();
+                }
                 //DiscourseProposition dp = null;
                 //First try to find locutions that initialize proposition
 
-                if (!daugtherNodes.isEmpty()) {
 
-                    for (Node daugtherNode : daugtherNodes) {
+
+
+
+                if (!assertingDaugtherNodes.isEmpty()) {
+
+                    for (Node daugtherNode : assertingDaugtherNodes) {
                         dp = null;
                         if (daugtherNode instanceof Proposition) {
                             /*
@@ -149,6 +234,20 @@ public class DiscourseModel {
                             List<Node> motherNodes = Edge.findMother(l, map.getEdges(), "Default Transition");
 
 
+                            if (debug)
+                            {
+                                List<Node> relatedNodes = new ArrayList<>();
+
+                                for (Node n : motherNodes)
+                                {
+                                    relatedNodes.addAll(Edge.findDaugtherContentNodes(n,map.getNodes(),map.getEdges()));
+
+                                }
+                                if (relatedNodes.size() > 0) {
+                                    System.out.println("Locution " + l.getJsonID() + " potentially invokes " + relatedNodes.size() + " discourse moves");
+                                }
+                            }
+
                             try {
                                 agreeMove(motherNodes, map, dp);
 
@@ -157,6 +256,8 @@ public class DiscourseModel {
                                 argueMove(motherNodes, map, dp);
 
                                 restateMove(motherNodes, map, dp);
+
+
                             } catch (Exception e) {
                                 System.out.println("Failed to process proposition move " + dp.getPid() + ": " + dp.getText());
                                 e.printStackTrace();
@@ -176,7 +277,7 @@ public class DiscourseModel {
 
 
                         try {
-                             Boolean agreeSuccess = agreeMove(motherNodes, map, empty);
+                            Boolean agreeSuccess = agreeMove(motherNodes, map, empty);
 
                             Boolean disagreeSucess = disagreeMove(motherNodes, map, empty);
 
@@ -200,10 +301,31 @@ public class DiscourseModel {
 
                 }
 
+                //Challenging moves
+                /*
+                if (!challengingDaughterNodes.isEmpty())
+                {
+                    DiscourseProposition challenging = initializeDPmove(l,discoursePropositions);
+
+                    for (Node n : challengingDaughterNodes)
+                    {
+                        if (iatToDiscourse.containsKey(n.getJsonID()))
+                        {
+                            challenging.getDeniesBelief().get(iatToDiscourse.get(n.getJsonID()).getPid()).
+                                    add(challenging.getOriginalSpeaker());
+
+                            if (debug)
+                            {
+                                debugLog.challenging++;
+                            }
+                        }
+                    }
+                 */
+
             }
 
 
-        }
+            }
 
 
         /*
@@ -244,29 +366,27 @@ public class DiscourseModel {
      */
 
     public void updateDiscourseProposition(LinkedList<DiscourseProposition> discoursePropositions, DiscourseProposition dp) {
-        LinkedHashMap<String, List<Speaker>> currentBeliefs = new LinkedHashMap<>();
+        LinkedHashMap<String, Set<Speaker>> currentBeliefs = new LinkedHashMap<>();
 
         //copy old beliefholder and denier information to current locution
         try {
             for (String key : discoursePropositions.getLast().getBeliefHolder().keySet()) {
-                List<Speaker> beliefHolders = new ArrayList<>();
+                Set<Speaker> beliefHolders = new HashSet<>();
 
-                for (Speaker speaker : discoursePropositions.getLast().getBeliefHolder().get(key)) {
-                    beliefHolders.add(speaker);
-                }
+                beliefHolders.addAll(discoursePropositions.getLast().getBeliefHolder().get(key));
+
                 currentBeliefs.put(key, beliefHolders);
 
             }
             dp.setBeliefHolder(currentBeliefs);
 
-            LinkedHashMap<String, List<Speaker>> currentDenials = new LinkedHashMap<>();
+            LinkedHashMap<String, Set<Speaker>> currentDenials = new LinkedHashMap<>();
 
             for (String key : discoursePropositions.getLast().getDeniesBelief().keySet()) {
-                List<Speaker> deniesBelief = new ArrayList<>();
+                Set<Speaker> deniesBelief = new HashSet<>();
 
-                for (Speaker speaker : discoursePropositions.getLast().getDeniesBelief().get(key)) {
-                    deniesBelief.add(speaker);
-                }
+                deniesBelief.addAll(discoursePropositions.getLast().getDeniesBelief().get(key));
+
                 currentDenials.put(key, deniesBelief);
             }
 
@@ -403,12 +523,12 @@ public class DiscourseModel {
 
 
         dp.setOriginalSpeaker(s);
-        List<Speaker> believeHolders = new ArrayList<>();
+        Set<Speaker> believeHolders = new HashSet<>();
         believeHolders.add(s);
         dp.getBeliefHolder().put(pid, believeHolders);
 
         if (!dp.getDeniesBelief().containsKey(pid)) {
-            dp.getDeniesBelief().put(pid, new ArrayList<>());
+            dp.getDeniesBelief().put(pid, new HashSet<>());
         }
 
         //Set commitments
@@ -464,13 +584,13 @@ public class DiscourseModel {
 
         //Set beliefholders
         if (!dp.getBeliefHolder().keySet().contains(pid)) {
-            dp.getBeliefHolder().put(pid, new ArrayList<>());
+            dp.getBeliefHolder().put(pid, new HashSet<>());
         }
         dp.getBeliefHolder().get(pid).add(s);
 
         //Set speaker who deny belief
         if (!dp.getDeniesBelief().keySet().contains(pid)) {
-            dp.getDeniesBelief().put(pid, new ArrayList<>());
+            dp.getDeniesBelief().put(pid, new HashSet<>());
         }
 
 
@@ -509,8 +629,8 @@ public class DiscourseModel {
         String newID = p.getPid();
 
         //For rigid belief system
-        LinkedHashMap<String, List<Speaker>> bh = currentProposition.getBeliefHolder();
-        LinkedHashMap<String, List<Speaker>> db = currentProposition.getDeniesBelief();
+        LinkedHashMap<String, Set<Speaker>> bh = currentProposition.getBeliefHolder();
+        LinkedHashMap<String, Set<Speaker>> db = currentProposition.getDeniesBelief();
 
 
         //For commitment-rating
@@ -520,10 +640,10 @@ public class DiscourseModel {
         //For rigid belief system
         try {
             if (!bh.containsKey(newID)) {
-                bh.put(newID, new ArrayList<>());
+                bh.put(newID, new HashSet<>());
             }
             if (!db.containsKey(newID)) {
-                db.put(newID, new ArrayList<>());
+                db.put(newID, new HashSet<>());
             }
             for (Speaker s : speakers) {
                 //Comment in for non-contradictory CG
@@ -600,11 +720,17 @@ public class DiscourseModel {
         //Indirect moves (i.e. via transition)
 
         Boolean success = false;
+        int agreeMoves = 0;
 
         for (Node transition : transitionNodes) {
 
             //Discourse move agree
             List<Node> agreePropositions = Edge.findRelatedDaugtherContentNode(transition, map.getNodes(), map.getEdges(), "Agreeing");
+
+            if (debug)
+            {
+                debugLog.potentialAgreeMoves = debugLog.potentialAgreeMoves + agreePropositions.size();
+            }
 
             if (!agreePropositions.isEmpty()) {
 
@@ -618,6 +744,8 @@ public class DiscourseModel {
 
                             //Make relevant again if it is used in IAT argumentation scheme
                             dp.getRelevance().replace(relatedDpId, 1.0);
+
+                            agreeMoves++;
                             success = true;
                         } catch(Exception e)
                         {
@@ -635,6 +763,10 @@ public class DiscourseModel {
                 }
             }
         }
+        if (debug && agreeMoves > 0) {
+            debugLog.agreeMoves = debugLog.agreeMoves + agreeMoves;
+            System.out.println("Found " + agreeMoves + " agree moves for current locution");
+        }
         return success;
     }
 
@@ -642,6 +774,7 @@ public class DiscourseModel {
 
 
         Boolean success = false;
+        int disagreeMoves = 0;
 
         for (Node transition : transitionNodes) {
 
@@ -650,6 +783,12 @@ public class DiscourseModel {
 
             if (!cidisagreePropositions.isEmpty()) {
                 disagreePropositions.addAll(cidisagreePropositions);
+
+                if (debug)
+                {
+                    debugLog.ciDisagree = debugLog.ciDisagree + cidisagreePropositions.size();
+                }
+
             }
 
             if (!disagreePropositions.isEmpty()) {
@@ -679,6 +818,7 @@ public class DiscourseModel {
 
                                 //Make relevant again if it is used in IAT argumentation scheme
                                 dp.getRelevance().replace(relatedDpId, 1.0);
+                                disagreeMoves++;
                                 success = true;
                             } else {
                                 System.out.println("Proposition " + p + "has no corresponding element in the discourse model.");
@@ -690,11 +830,18 @@ public class DiscourseModel {
                 }
             }
         }
+        if (debug && disagreeMoves > 0) {
+            debugLog.disagreeMoves = debugLog.disagreeMoves + disagreeMoves;
+            System.out.println("Found " + disagreeMoves + " disagree moves for current locution");
+        }
         return success;
     }
 
     //TODO Do the same thing for mother nodes
     public void argueMove(List<Node> transitionNodes, IATmap map, DiscourseProposition dp) {
+
+        int argueMoves = 0;
+
         for (Node transition : transitionNodes) {
             List<Node> argueNodes = Edge.findRelatedDaugtherContentNode(transition, map.getNodes(), map.getEdges(), "Arguing");
 
@@ -713,6 +860,7 @@ public class DiscourseModel {
 
                               DiscourseProposition relatedDp =  iatToDiscourse.get(q.getJsonID());
 
+                              //TODO does the second conjunct work as intended?
                                 if (!dp.getOriginalSpeaker().equals(relatedDp.getOriginalSpeaker()) ||
                                         !dp.getBeliefHolder().get(relatedDp.getPid()).contains(dp.getOriginalSpeaker())) {
                                     dp.getBeliefHolder().get(relatedDp.getPid()).add(dp.getOriginalSpeaker());
@@ -721,6 +869,8 @@ public class DiscourseModel {
 
                                 //Make relevant again if it is used in IAT argumentation scheme
                                 dp.getRelevance().replace(relatedDp.getPid(), 1.0);
+
+                                argueMoves++;
 
 
                             }
@@ -732,12 +882,19 @@ public class DiscourseModel {
             }
         }
 
+        if (debug && argueMoves > 0) {
+            debugLog.argueMoves = debugLog.argueMoves + argueMoves;
+            System.out.println("Found " + argueMoves + " argue moves for current locution");
+        }
     }
 
 
     //Rephrases p r-> q can either be p worlds are subset of q worlds, or q worlds are subset of p worlds
 
     public void restateMove(List<Node> transitionNodes, IATmap map, DiscourseProposition dp) {
+
+        int restateMoves = 0;
+
         for (Node transition : transitionNodes) {
             List<Node> restateNodes = Edge.findRelatedDaugtherContentNode(transition, map.getNodes(), map.getEdges(), "Restating");
 
@@ -763,6 +920,7 @@ public class DiscourseModel {
                             //Make relevant again if it is used in IAT argumentation scheme
                             dp.getRelevance().replace(relatedDp.getPid(), 1.0);
 
+                            restateMoves++;
 
                         }
                     }
@@ -772,18 +930,14 @@ public class DiscourseModel {
 
         }
     }
-
+        if (debug && restateMoves > 0) {
+            debugLog.restateMoves = debugLog.restateMoves + restateMoves;
+            System.out.println("Found " + restateMoves + " disagree moves for current locution");
+        }
 }
 
-    /* TODO:
-    Further moves:
-    Praising,
-    Strong asserting,
-    Weak asserting
-     */
 
-    /*
-
+/*
     public LinkedList<DiscourseProposition> mergeSpeakers2(List<DiscourseProposition> dps,
                                                            HashMap<Proposition,DiscourseProposition> pstodps,
                                                            Speaker a, Speaker b, Speaker combined)

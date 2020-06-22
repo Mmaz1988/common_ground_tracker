@@ -35,6 +35,7 @@ public class GUI {
     private JButton showContradictoryButton;
     private JButton writeToJSONButton;
     private JButton calculateAllComitmentsButton;
+    private JButton showJointCommitmentsButton;
 
     private DiscourseModel dm;
     private DiscourseOperator operator;
@@ -103,13 +104,13 @@ public class GUI {
                 if (isSelectedIndex(index0)) {
                     super.removeSelectionInterval(index0, index1);
                     ((PropositionRenderer) propositionList.getCellRenderer()).setHighlightCommitments(new HashSet<>());
-                    ((PropositionRenderer) propositionList.getCellRenderer()).setHighlightJointCommitments(new HashSet<>());
+                    ((PropositionRenderer) propositionList.getCellRenderer()).setHighlightPositiveJointCommitments(new HashSet<>());
                     propositionList.repaint();
 
                 } else {
                     super.addSelectionInterval(index0, index1);
                     ((PropositionRenderer) propositionList.getCellRenderer()).setHighlightCommitments(new HashSet<>());
-                    ((PropositionRenderer) propositionList.getCellRenderer()).setHighlightJointCommitments(new HashSet<>());
+                    ((PropositionRenderer) propositionList.getCellRenderer()).setHighlightPositiveJointCommitments(new HashSet<>());
                     propositionList.repaint();
 
 
@@ -153,7 +154,7 @@ public class GUI {
                     Arrays.sort(fileArray, new Comparator<File>() {
                         @Override
                         public int compare(File o1, File o2) {
-                            Pattern mapID = Pattern.compile(".*(\\d+)\\.json");
+                            Pattern mapID = Pattern.compile("(\\d+)\\.json$");
 
                             Matcher o1Matcher = mapID.matcher(o1.getName());
                             Matcher o2Matcher = mapID.matcher(o2.getName());
@@ -199,9 +200,14 @@ public class GUI {
                         }
                     }
 
-                    Collections.reverse(maps);
+                   // Collections.reverse(maps);
 
-                    dm = new DiscourseModel(maps);
+                    //dm = new DiscourseModel(maps);
+
+                    dm = new DiscourseModel(maps,true);
+
+                    //for debug mode
+
                     operator = new DiscourseOperator(dm);
 
                     initializeGUI();
@@ -262,9 +268,6 @@ public class GUI {
         });
                 }
                 */
-
-
-
     }
 
     public GUI(JFrame frame) {
@@ -457,7 +460,7 @@ public class GUI {
                                 setHighlightCommitments(commitments.get("commitments"));
 
                         ((PropositionRenderer) propositionList.getCellRenderer()).
-                                setHighlightJointCommitments(commitments.get("jointCommitments"));
+                                setHighlightPositiveJointCommitments(commitments.get("jointCommitments"));
 
 
                         /*
@@ -772,7 +775,7 @@ public class GUI {
                             try {
                                 FileOutputStream fos = new FileOutputStream(dir.toPath().toString());
                                 ObjectOutputStream oos = new ObjectOutputStream(fos);
-                                oos.writeObject(operator.writeDiscourseModelToJson());
+                                oos.writeObject(operator.writeCurrentToJson(locus));
                                 oos.close();
                             } catch (NotSerializableException nse) {
                                 System.out.println("Serialization error!");
@@ -803,13 +806,27 @@ public class GUI {
             calculateAllComitmentsButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    operator.calculateAllCommitments(locus);
+                    operator.calculateAllCommitments(locus,dm.getDiscourseParticipants());
 
                 }
             });
         }
 
+        if (showJointCommitmentsButton.getActionListeners().length==0) {
+            showJointCommitmentsButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    ((PropositionRenderer) propositionList.getCellRenderer()).resetLists();
+                    propositionList.repaint();
+
+                    PropositionRenderer r = ((PropositionRenderer) propositionList.getCellRenderer());
+
+                  r.setHighlightPositiveJointCommitments(operator.calculatePositiveJointCommitments(locus));
+                  r.setHighlightNegativeJointCommitments(operator.calculateNegativeJointCommitments(locus));
+
+                    propositionList.repaint();
+                }
+            });
+        }
     }
-
-
 }
